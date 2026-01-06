@@ -25,8 +25,13 @@ SECRET_KEY = 'django-insecure-marsu9od0q60tlg*6j!o5jkah35mjad_78494$(0q#88yo$nvj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+]
 
 # Application definition
 
@@ -59,14 +64,21 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "nikhilmunna3@gmail.com"
-EMAIL_HOST_PASSWORD = "mhxtvkhhstntpsnf"
+# EMAIL_HOST_PASSWORD = "mhxtvkhhstntpsnf"
 DEFAULT_FROM_EMAIL = "EMS <nikhilmunna3@gmail.com>"
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=210),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -74,6 +86,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
