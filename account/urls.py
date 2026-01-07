@@ -23,4 +23,5 @@ urlpatterns = [
     # EMPLOYEE
     path("employee/profile/", EmployeeProfileView.as_view()),
     path("employee/change-password/", ChangePasswordView.as_view()),
+
 ]

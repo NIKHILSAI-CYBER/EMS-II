@@ -4,8 +4,13 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
+from .serializers import AdminUpdateEmployeeSerializer
+from rest_framework import status
+
 
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from .permissions import IsPasswordChanged
 
 from .models import User, PasswordResetOTP
 from .serializers import (
@@ -87,11 +92,36 @@ class AdminEmployeeDetailView(APIView):
             "user": UserSerializer(user).data,
             "profile": EmployeeProfileSerializer(user.profile).data,
         })
+    def put(self, request, employee_id):
+        user = get_object_or_404(User, id=employee_id, role="EMPLOYEE")
+
+        serializer = AdminUpdateEmployeeSerializer(
+            user,
+            data=request.data,
+            partial=True  # allow partial update
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "message": "Employee updated successfully",
+            "user": UserSerializer(user).data
+        })
+    
+    def delete(self, request, employee_id):
+        user = get_object_or_404(User, id=employee_id, role="EMPLOYEE")
+
+        user.delete()
+
+        return Response(
+            {"message": "Employee deleted successfully"},
+            status=status.HTTP_200_OK
+        )
 
 
 # ================= EMPLOYEE =================
 class EmployeeProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
 
     def get(self, request):
         return Response({
@@ -123,13 +153,27 @@ class ChangePasswordView(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if not request.user.check_password(serializer.validated_data["old_password"]):
-            return Response({"error": "Wrong password"}, status=400)
+        user = request.user
 
-        request.user.set_password(serializer.validated_data["new_password"])
-        request.user.save()
+        if not user.check_password(serializer.validated_data["old_password"]):
+            return Response(
+                {"old_password": "Old password is incorrect"},
+                status=400
+            )
 
-        return Response({"message": "Password updated"})
+        user.set_password(serializer.validated_data["new_password"])
+
+        if user.is_first_login:
+            user.is_first_login = False
+
+        user.save()
+
+        # return Response({"message": "Password updated successfully"})
+        return Response({
+            "message": "Password updated successfully",
+            "is_first_login": user.is_first_login
+        })
+
 
 
 # ================= FORGOT PASSWORD =================
@@ -208,3 +252,5 @@ class ResetPasswordView(APIView):
         user.save()
 
         return Response({"message": "Password reset successful"})
+
+
