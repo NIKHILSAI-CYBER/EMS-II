@@ -20,6 +20,7 @@ urlpatterns = [
     path("admin/create-employee/", CreateEmployeeView.as_view()),
     path("admin/employees/<int:id>/",DeleteEmployeeView.as_view()),
     path("admin/employees/<int:id>/",UpdateEmployeeView.as_view()),
+    path("admin/dashboard/metrics/", AdminDashboardMetricsView.as_view()),
     # path("admin/employees/<int:id>/", EmployeeAdminView.as_view()),
     
     

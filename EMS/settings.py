@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "corsheaders",
 
     "account",
+    "onboarding",
 ]
 
 AUTH_USER_MODEL = "account.User"

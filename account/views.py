@@ -9,9 +9,13 @@ from .permissions import IsSuperAdmin
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 # from .serializers import CustomTokenObtainPairSerializer
+from account.permissions import IsOnboardingApproved
+from onboarding.models import Onboarding
 
 
 class DashboardView(APIView):
+    permission_classes = [IsAuthenticated, IsOnboardingApproved]
+
     def get(self, request):
         return Response({
             "total_employees": User.objects.filter(role="EMPLOYEE").count(),
@@ -44,13 +48,10 @@ class LoginView(APIView):
         return Response(serializer.validated_data)
     
 class EmployeeListView(APIView):
+    permission_classes = [IsAuthenticated, IsOnboardingApproved]
+
     def get(self, request):
         qs = User.objects.filter(role="EMPLOYEE")
-        search = request.GET.get("search")
-
-        if search:
-            qs = qs.filter(full_name__icontains=search)
-
         return Response(UserSerializer(qs, many=True).data)
     
 class EmployeeDetailView(APIView):
@@ -160,8 +161,41 @@ class UpdateEmployeeView(APIView):
             {"message": "Employee updated successfully"}
         )
     
-# class CustomTokenObtainPairView(TokenObtainPairView):
-#     serializer_class = CustomTokenObtainPairSerializer
+
+# Employee is BLOCKED from:
+# Dashboard, Employee list, Any business APIs
+# Until:
+# is_first_login = False AND onboarding.status = APPROVED
 
 
+#APIs That MUST REMAIN OPEN
+# /api/login/
+# /api/change-password/
+# /api/onboarding/my/
+# /api/onboarding/submit/
+# /api/onboarding/documents/upload/
 
+
+class AdminDashboardMetricsView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request):
+        return Response({
+            "employees": {
+                "total": User.objects.filter(role="EMPLOYEE").count(),
+                "active": User.objects.filter(role="EMPLOYEE", is_active=True).count(),
+                "inactive": User.objects.filter(role="EMPLOYEE", is_active=False).count(),
+            },
+            "onboarding": {
+                "draft": Onboarding.objects.filter(status="DRAFT").count(),
+                "submitted": Onboarding.objects.filter(status="SUBMITTED").count(),
+                "approved": Onboarding.objects.filter(status="APPROVED").count(),
+                "rejected": Onboarding.objects.filter(status="REJECTED").count(),
+                "pending_approvals": Onboarding.objects.filter(status="SUBMITTED").count(),
+            }
+        })
+    
+# How Frontend Uses This
+# Render admin dashboard cards
+# Show “Pending Approvals” badge
+# No extra API calls needed

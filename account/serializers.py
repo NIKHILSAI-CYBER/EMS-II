@@ -7,6 +7,8 @@ from django.conf import settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from onboarding.models import Onboarding
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -60,7 +62,11 @@ class CreateEmployeeSerializer(serializers.ModelSerializer):
             password=password,
         )
 
-        # Email credentials
+        # ✅ AUTO-CREATE ONBOARDING
+        Onboarding.objects.create(
+            employee=user
+        )
+
         send_mail(
             subject="Your EMS Account Credentials",
             message=(
@@ -68,7 +74,7 @@ class CreateEmployeeSerializer(serializers.ModelSerializer):
                 f"Your EMS account has been created.\n\n"
                 f"Login Email: {user.email}\n"
                 f"Temporary Password: {password}\n\n"
-                f"Please log in and change your password immediately."
+                f"Please log in and complete your onboarding."
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
@@ -77,6 +83,14 @@ class CreateEmployeeSerializer(serializers.ModelSerializer):
 
         return user
     
+# ✅ What This Guarantees
+
+# Every employee always has onboarding
+
+# No manual onboarding creation
+
+# Clean 1-to-1 lifecycle
+
 
 class UpdateEmployeeSerializer(serializers.ModelSerializer):
     class Meta:

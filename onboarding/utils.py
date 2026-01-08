@@ -1,0 +1,32 @@
+from django.core.mail import send_mail
+from django.conf import settings
+from .models import Onboarding
+
+def send_onboarding_status_email(user, status, remarks=""):
+    subject = f"Onboarding {status}"
+    message = (
+        f"Hello {user.full_name},\n\n"
+        f"Your onboarding has been {status.lower()}.\n\n"
+        f"Remarks: {remarks if remarks else 'N/A'}\n\n"
+        f"Regards,\nEMS Team"
+    )
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=False,
+    )
+
+def get_editable_onboarding(user):
+    onboarding = Onboarding.objects.filter(employee=user).first()
+    if not onboarding:
+        return None, "Onboarding not found"
+
+    if onboarding.status != "DRAFT":
+        return None, "Onboarding is not editable"
+
+    return onboarding, None
+
+def get_onboarding(user):
+    return Onboarding.objects.filter(employee=user).first()
