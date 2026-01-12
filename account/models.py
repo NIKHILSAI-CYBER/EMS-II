@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .managers import UserManager
 
-
+ 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ("SUPER_ADMIN", "Super Admin"),
@@ -152,3 +152,19 @@ class PasswordResetOTP(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.otp}"
+
+class AdminProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="admin_profile"
+    )
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=15)
+    # image = CloudinaryField("image", blank=True, null=True)
+    image = models.URLField(blank=True, null=True)
+
+
+    def _str_(self):
+        return f"Admin Profile - {self.user.email}"

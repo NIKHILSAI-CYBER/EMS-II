@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "rest_framework",
     "corsheaders",
+    "cloudinary",
 
     "account",
     "onboarding",
@@ -98,7 +99,6 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -184,3 +184,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+import cloudinary
+cloudinary.config(
+    cloud_name="dg6injamo",
+    api_key="435216891373147",
+    api_secret="Q8LbTa8RTkGvav_0CYa3cSS7tK4",
+    secure=True,
+)

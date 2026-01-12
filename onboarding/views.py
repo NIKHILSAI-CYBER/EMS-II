@@ -6,6 +6,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from account.models import User
+from .utils import get_onboarding, get_editable_onboarding
+
 from .models import Onboarding, OnboardingDocument
 from .serializers import (
     OnboardingSerializer,
@@ -166,30 +169,37 @@ class VerifyOnboardingDocumentView(APIView):
         })
 
 
+from account.permissions import IsPasswordChanged
+
 class OnboardingProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
         if error:
             return Response({"error": error}, status=400)
 
-        profile = getattr(onboarding, "profile", None)
-
-        if profile:
-            # UPDATE
-            serializer = OnboardingProfileSerializer(
-                profile, data=request.data, partial=True
-            )
-        else:
-            # CREATE
-            serializer = OnboardingProfileSerializer(data=request.data)
+        obj = getattr(onboarding, "profile", None)
+        serializer = (
+            OnboardingProfileSerializer(obj, data=request.data, partial=True)
+            if obj else OnboardingProfileSerializer(data=request.data)
+        )
 
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
-
         return Response({"message": "Profile saved successfully"})
-    
+
+    def get(self, request):
+        onboarding, error = get_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
+
+        obj = getattr(onboarding, "profile", None)
+        return Response(
+            OnboardingProfileSerializer(obj).data if obj else {},
+            status=200
+        )
+
 
 class OnboardingEducationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -203,6 +213,17 @@ class OnboardingEducationView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
         return Response({"message": "Education added"})
+
+    def get(self, request):
+        onboarding, error = get_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
+
+        queryset = onboarding.educations.all()
+        return Response(
+            OnboardingEducationSerializer(queryset, many=True).data,
+            status=200
+        )
     
 
 class OnboardingExperienceView(APIView):
@@ -217,6 +238,18 @@ class OnboardingExperienceView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
         return Response({"message": "Experience added"})
+
+    def get(self, request):
+        onboarding, error = get_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
+
+        queryset = onboarding.experiences.all()
+        return Response(
+            OnboardingExperienceSerializer(queryset, many=True).data,
+            status=200
+        )
+
     
     
 class OnboardingIdentityView(APIView):
@@ -227,21 +260,27 @@ class OnboardingIdentityView(APIView):
         if error:
             return Response({"error": error}, status=400)
 
-        identity = getattr(onboarding, "identity", None)
-
-        if identity:
-            # UPDATE existing identity
-            serializer = OnboardingIdentitySerializer(
-                identity, data=request.data, partial=True
-            )
-        else:
-            # CREATE new identity
-            serializer = OnboardingIdentitySerializer(data=request.data)
+        obj = getattr(onboarding, "identity", None)
+        serializer = (
+            OnboardingIdentitySerializer(obj, data=request.data, partial=True)
+            if obj else OnboardingIdentitySerializer(data=request.data)
+        )
 
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
-
         return Response({"message": "Identity saved successfully"})
+
+    def get(self, request):
+        onboarding, error = get_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
+
+        obj = getattr(onboarding, "identity", None)
+        return Response(
+            OnboardingIdentitySerializer(obj).data if obj else {},
+            status=200
+        )
+
     
 class OnboardingBankView(APIView):
     permission_classes = [IsAuthenticated]
@@ -251,10 +290,26 @@ class OnboardingBankView(APIView):
         if error:
             return Response({"error": error}, status=400)
 
-        serializer = OnboardingBankSerializer(data=request.data)
+        obj = getattr(onboarding, "bank", None)
+        serializer = (
+            OnboardingBankSerializer(obj, data=request.data, partial=True)
+            if obj else OnboardingBankSerializer(data=request.data)
+        )
+
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
         return Response({"message": "Bank details saved"})
+
+    def get(self, request):
+        onboarding, error = get_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
+
+        obj = getattr(onboarding, "bank", None)
+        return Response(
+            OnboardingBankSerializer(obj).data if obj else {},
+            status=200
+        )
     
 
 class GetOnboardingProfileView(APIView):

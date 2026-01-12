@@ -8,3 +8,10 @@ class IsSuperAdmin(BasePermission):
             return False
 
         return getattr(request.user, "role", None) == "SUPER_ADMIN"
+    
+class IsPasswordChanged(BasePermission):
+    """
+    Allow access only after first password change
+    """
+    def has_permission(self, request, view):
+        return not getattr(request.user, "is_first_login", True)

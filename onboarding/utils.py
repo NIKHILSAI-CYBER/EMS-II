@@ -23,10 +23,26 @@ def get_editable_onboarding(user):
     if not onboarding:
         return None, "Onboarding not found"
 
+    if onboarding.status == "SUBMITTED":
+        return None, "Onboarding already submitted"
+
+    if onboarding.status == "APPROVED":
+        return None, "Onboarding already approved"
+
+    if onboarding.status == "REJECTED":
+        return None, "Onboarding rejected. Please wait for admin action."
+
     if onboarding.status != "DRAFT":
         return None, "Onboarding is not editable"
 
     return onboarding, None
 
+
+# def get_onboarding(user):
+#     return Onboarding.objects.filter(employee=user).first()
+
 def get_onboarding(user):
-    return Onboarding.objects.filter(employee=user).first()
+    onboarding = Onboarding.objects.filter(employee=user).first()
+    if not onboarding:
+        return None, "Onboarding not found"
+    return onboarding, None
