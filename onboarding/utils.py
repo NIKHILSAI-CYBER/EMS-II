@@ -18,6 +18,8 @@ def send_onboarding_status_email(user, status, remarks=""):
         fail_silently=False,
     )
 
+# WRITE helper
+
 def get_editable_onboarding(user):
     onboarding = Onboarding.objects.filter(employee=user).first()
     if not onboarding:
@@ -41,6 +43,7 @@ def get_editable_onboarding(user):
 # def get_onboarding(user):
 #     return Onboarding.objects.filter(employee=user).first()
 
+# READ helper
 def get_onboarding(user):
     onboarding = Onboarding.objects.filter(employee=user).first()
     if not onboarding:

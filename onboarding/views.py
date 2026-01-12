@@ -180,7 +180,7 @@ class OnboardingProfileView(APIView):
             return Response({"error": error}, status=400)
 
         obj = getattr(onboarding, "profile", None)
-        serializer = (
+        serializer = (                                       #PUT/PATCH is NOT required - You are doing upsert-style POSTs:
             OnboardingProfileSerializer(obj, data=request.data, partial=True)
             if obj else OnboardingProfileSerializer(data=request.data)
         )
@@ -194,15 +194,16 @@ class OnboardingProfileView(APIView):
         if error:
             return Response({"error": error}, status=400)
 
-        obj = getattr(onboarding, "profile", None)
-        return Response(
-            OnboardingProfileSerializer(obj).data if obj else {},
-            status=200
-        )
+        profile = getattr(onboarding, "profile", None)
+        if not profile:
+            return Response({}, status=200)
+
+        return Response(OnboardingProfileSerializer(profile).data)
+
 
 
 class OnboardingEducationView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
@@ -227,7 +228,7 @@ class OnboardingEducationView(APIView):
     
 
 class OnboardingExperienceView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
@@ -253,7 +254,7 @@ class OnboardingExperienceView(APIView):
     
     
 class OnboardingIdentityView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
@@ -261,7 +262,7 @@ class OnboardingIdentityView(APIView):
             return Response({"error": error}, status=400)
 
         obj = getattr(onboarding, "identity", None)
-        serializer = (
+        serializer = (                                            #PUT/PATCH is NOT required - You are doing upsert-style POSTs:
             OnboardingIdentitySerializer(obj, data=request.data, partial=True)
             if obj else OnboardingIdentitySerializer(data=request.data)
         )
@@ -283,7 +284,7 @@ class OnboardingIdentityView(APIView):
 
     
 class OnboardingBankView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
@@ -291,7 +292,7 @@ class OnboardingBankView(APIView):
             return Response({"error": error}, status=400)
 
         obj = getattr(onboarding, "bank", None)
-        serializer = (
+        serializer = (                                #PUT/PATCH is NOT required - You are doing upsert-style POSTs:
             OnboardingBankSerializer(obj, data=request.data, partial=True)
             if obj else OnboardingBankSerializer(data=request.data)
         )
@@ -312,40 +313,40 @@ class OnboardingBankView(APIView):
         )
     
 
-class GetOnboardingProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        onboarding = get_onboarding(request.user)
-        if not onboarding or not hasattr(onboarding, "profile"):
-            return Response({})
-        return Response(OnboardingProfileSerializer(onboarding.profile).data)
+# class GetOnboardingProfileView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         onboarding = get_onboarding(request.user)
+#         if not onboarding or not hasattr(onboarding, "profile"):
+#             return Response({})
+#         return Response(OnboardingProfileSerializer(onboarding.profile).data)
 
-class GetOnboardingEducationView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        onboarding = get_onboarding(request.user)
-        qs = onboarding.educations.all() if onboarding else []
-        return Response(OnboardingEducationSerializer(qs, many=True).data)
+# class GetOnboardingEducationView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         onboarding = get_onboarding(request.user)
+#         qs = onboarding.educations.all() if onboarding else []
+#         return Response(OnboardingEducationSerializer(qs, many=True).data)
 
-class GetOnboardingExperienceView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        onboarding = get_onboarding(request.user)
-        qs = onboarding.experiences.all() if onboarding else []
-        return Response(OnboardingExperienceSerializer(qs, many=True).data)
+# class GetOnboardingExperienceView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         onboarding = get_onboarding(request.user)
+#         qs = onboarding.experiences.all() if onboarding else []
+#         return Response(OnboardingExperienceSerializer(qs, many=True).data)
 
-class GetOnboardingIdentityView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        onboarding = get_onboarding(request.user)
-        if not onboarding or not hasattr(onboarding, "identity"):
-            return Response({})
-        return Response(OnboardingIdentitySerializer(onboarding.identity).data)
+# class GetOnboardingIdentityView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         onboarding = get_onboarding(request.user)
+#         if not onboarding or not hasattr(onboarding, "identity"):
+#             return Response({})
+#         return Response(OnboardingIdentitySerializer(onboarding.identity).data)
 
-class GetOnboardingBankView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        onboarding = get_onboarding(request.user)
-        if not onboarding or not hasattr(onboarding, "bank"):
-            return Response({})
-        return Response(OnboardingBankSerializer(onboarding.bank).data)
+# class GetOnboardingBankView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         onboarding = get_onboarding(request.user)
+#         if not onboarding or not hasattr(onboarding, "bank"):
+#             return Response({})
+#         return Response(OnboardingBankSerializer(onboarding.bank).data)
