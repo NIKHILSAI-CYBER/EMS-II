@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from account.permissions import IsPasswordChanged
 from account.models import User
 from .utils import get_onboarding, get_editable_onboarding
 
@@ -14,6 +14,7 @@ from .serializers import (
     OnboardingSerializer,
     SubmitOnboardingSerializer,
     OnboardingDocumentSerializer,
+    OnboardingDocumentUploadSerializer,
     AdminOnboardingListSerializer,
     AdminOnboardingDetailSerializer,
     ApproveRejectOnboardingSerializer,
@@ -48,6 +49,12 @@ class SubmitOnboardingView(APIView):
         onboarding = Onboarding.objects.filter(employee=request.user).first()
         if not onboarding:
             return Response({"error": "Onboarding not found"}, status=404)
+        
+        if not hasattr(onboarding, "identity"):
+            return Response({"error": "Identity details missing"}, status=400)
+
+        if not onboarding.documents.exists():
+            return Response({"error": "Documents not uploaded"}, status=400)
 
         if onboarding.status != "DRAFT":
             return Response(
@@ -65,20 +72,62 @@ class SubmitOnboardingView(APIView):
         return Response({"message": "Onboarding submitted successfully"})
 
 
-# UPLOAD document (separate page)
-class UploadOnboardingDocumentView(APIView):
-    permission_classes = [IsAuthenticated]
+class OnboardingDocumentView(APIView):
+    permission_classes = [IsAuthenticated, IsPasswordChanged]
+
+    def get(self, request):
+        onboarding, error = get_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
+
+        documents = onboarding.documents.all()
+        return Response(
+            OnboardingDocumentSerializer(documents, many=True).data,
+            status=200
+        )
 
     def post(self, request):
-        onboarding = Onboarding.objects.filter(employee=request.user).first()
-        if not onboarding:
-            return Response({"error": "Onboarding not found"}, status=404)
+        onboarding, error = get_editable_onboarding(request.user)
+        if error:
+            return Response({"error": error}, status=400)
 
         serializer = OnboardingDocumentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         serializer.save(onboarding=onboarding)
-        return Response({"message": "Document uploaded"})
+
+        return Response({"message": "Document uploaded"}, status=201)
+
+
+
+# UPLOAD document (separate page)
+# class UploadOnboardingDocumentView(APIView):
+
+
+    # permission_classes = [IsAuthenticated]
+
+    # def post(self, request):
+    #     onboarding = Onboarding.objects.filter(employee=request.user).first()
+    #     if not onboarding:
+    #         return Response({"error": "Onboarding not found"}, status=404)
+
+    #     serializer = OnboardingDocumentSerializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+
+    #     serializer.save(onboarding=onboarding)
+    #     return Response({"message": "Document uploaded"})
+
+    # permission_classes = [IsAuthenticated, IsPasswordChanged]
+
+    # def post(self, request):
+    #     onboarding, error = get_editable_onboarding(request.user)
+    #     if error:
+    #         return Response({"error": error}, status=400)
+
+    #     serializer = OnboardingDocumentUploadSerializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save(onboarding=onboarding)
+
+    #     return Response({"message": "Document uploaded"})
 
 
 # LIST submitted onboardings (admin)
@@ -106,7 +155,7 @@ class AdminOnboardingDetailView(APIView):
 class AdminOnboardingActionView(APIView):
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
-    def post(self, request, id):
+    def post(self, request, id):  
         onboarding = Onboarding.objects.filter(id=id, status="SUBMITTED").first()
         if not onboarding:
             return Response({"error": "Invalid onboarding state"}, status=400)
@@ -270,17 +319,18 @@ class OnboardingIdentityView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
         return Response({"message": "Identity saved successfully"})
-
     def get(self, request):
         onboarding, error = get_onboarding(request.user)
         if error:
             return Response({"error": error}, status=400)
 
-        obj = getattr(onboarding, "identity", None)
-        return Response(
-            OnboardingIdentitySerializer(obj).data if obj else {},
-            status=200
-        )
+        identity = getattr(onboarding, "identity", None)
+        documents = onboarding.documents.all()
+
+        return Response({
+            "identity": OnboardingIdentitySerializer(identity).data if identity else {},
+            "documents": OnboardingDocumentSerializer(documents, many=True).data
+        }, status=200)
 
     
 class OnboardingBankView(APIView):
@@ -313,6 +363,29 @@ class OnboardingBankView(APIView):
         )
     
 
+class OnboardingSubmitStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        onboarding = Onboarding.objects.filter(employee=request.user).first()
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=404)
+
+        # You can customize message based on status
+        if onboarding.status == "SUBMITTED":
+            msg = "Onboarding submitted successfully"
+        elif onboarding.status == "APPROVED":
+            msg = "Onboarding approved"
+        elif onboarding.status == "REJECTED":
+            msg = "Onboarding rejected"
+        else:
+            msg = "Onboarding in draft"
+
+        return Response({
+            "status": onboarding.status,
+            "submitted_at": onboarding.submitted_at,
+            "message": msg
+        }, status=200)
 # class GetOnboardingProfileView(APIView):
 #     permission_classes = [IsAuthenticated]
 #     def get(self, request):

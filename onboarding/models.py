@@ -110,7 +110,6 @@ class OnboardingProfile(models.Model):
     zip_code = models.CharField(max_length=10)
 
 
-
 class OnboardingEducation(models.Model):
     onboarding = models.ForeignKey(Onboarding, on_delete=models.CASCADE, related_name="educations")
 
@@ -140,8 +139,8 @@ class OnboardingIdentity(models.Model):
     aadhaar_number = models.CharField(max_length=12, blank=True)
     pan_number = models.CharField(max_length=10, blank=True)
     passport_number = models.CharField(max_length=20, blank=True)
-    voter_id = models.CharField(max_length=20, blank=True)
-    uan_number = models.CharField(max_length=20, blank=True)
+    voter_id = models.CharField(max_length=20, blank=True, null=True)
+    uan_number = models.CharField(max_length=20, blank=True, null=True)
 
 
 

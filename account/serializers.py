@@ -202,6 +202,7 @@ class CreateEmployeeSerializer(serializers.ModelSerializer):
             password=password,
             is_active=True,
         )
+        EmployeeProfile.objects.get_or_create(user=user)
 
         # ✅ ALWAYS ensure onboarding exists
         Onboarding.objects.get_or_create(employee=user)

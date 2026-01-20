@@ -37,7 +37,7 @@ CORS_ALLOW_HEADERS = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-
+# CSRF_TRUSTED_ORIGINS = ["https://*.devtunnels.ms"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

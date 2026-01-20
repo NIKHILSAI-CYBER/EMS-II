@@ -35,8 +35,6 @@ urlpatterns = [
     path("employees/<int:id>/",EmployeeDetailView.as_view()),
     path("employees/profile/",EmployeeProfileView.as_view()),
     path("employees/change-password/", ChangePasswordView.as_view()),
-
-
     # path("admin/employees/<int:id>/",DeleteEmployeeView.as_view()),
     # path("admin/employees/<int:id>/", EmployeeAdminView.as_view()),
     

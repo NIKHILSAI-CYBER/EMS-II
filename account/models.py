@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .managers import UserManager
 
- 
+
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ("SUPER_ADMIN", "Super Admin"),
