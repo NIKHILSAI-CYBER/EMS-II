@@ -45,6 +45,34 @@ class Onboarding(models.Model):
     
 
 
+# class OnboardingDocument(models.Model):
+#     DOCUMENT_TYPE_CHOICES = (
+#         ("AADHAR", "Aadhar"),
+#         ("PAN", "PAN"),
+#         ("RESUME", "Resume"),
+#         ("PHOTO", "Photo"),
+#         ("OTHER", "Other"),
+#     )
+
+#     onboarding = models.ForeignKey(
+#         Onboarding,
+#         on_delete=models.CASCADE,
+#         related_name="documents"
+#     )
+
+#     document_type = models.CharField(
+#         max_length=50,
+#         choices=DOCUMENT_TYPE_CHOICES
+#     )
+
+#     file = models.FileField(upload_to="onboarding_documents/")
+#     is_verified = models.BooleanField(default=False)
+
+#     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+#     def __str__(self):
+#         return f"{self.document_type} - {self.onboarding.employee}"
+    
 class OnboardingDocument(models.Model):
     DOCUMENT_TYPE_CHOICES = (
         ("AADHAR", "Aadhar"),
@@ -67,12 +95,13 @@ class OnboardingDocument(models.Model):
 
     file = models.FileField(upload_to="onboarding_documents/")
     is_verified = models.BooleanField(default=False)
-
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("onboarding", "document_type")
 
     def __str__(self):
         return f"{self.document_type} - {self.onboarding.employee}"
-    
 
 
 # OneToOne onboarding per employee (matches reality)
