@@ -70,6 +70,8 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
     experiences = serializers.SerializerMethodField()
     documents = serializers.SerializerMethodField()
 
+    is_documents_verified = serializers.SerializerMethodField()
+
     class Meta:
         model = Onboarding
         fields = (
@@ -80,6 +82,8 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
             "submitted_at",
             "admin_remarks",
 
+            "is_documents_verified",
+
             "profile",
             "identity",
             "bank",
@@ -87,6 +91,9 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
             "educations",
             "experiences",
             "documents",
+
+            "employee",
+            "reviewed_at",
         )
 
     def get_profile(self, obj):
@@ -112,6 +119,14 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
     def get_documents(self, obj):
         qs = obj.documents.all()
         return OnboardingDocumentSerializer(qs, many=True).data
+    
+    def get_is_documents_verified(self, obj):
+        documents = obj.documents.all()
+
+        if not documents.exists():
+            return False
+
+        return not documents.filter(is_verified=False).exists()
 
 # class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
 #     employee_email = serializers.CharField(source="employee.email", read_only=True)
@@ -143,7 +158,7 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
 #             for d in qs
 #         ]
 
-
+# APPROVE / REJECT
 class ApproveRejectOnboardingSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["APPROVE", "REJECT"])
     admin_remarks = serializers.CharField(required=False, allow_blank=True)

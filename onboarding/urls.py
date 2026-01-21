@@ -3,7 +3,7 @@ from .views import *
 
 
 urlpatterns = [
-    path("my/", MyOnboardingView.as_view()),
+    path("my/", MyOnboardingView.as_view()),                #to GET emp submtd details
     path("submit/", SubmitOnboardingView.as_view()),
 
     path("documents/", OnboardingDocumentView.as_view()),
@@ -15,12 +15,13 @@ urlpatterns = [
     path("bank/", OnboardingBankView.as_view()),
 
     # path("documents/upload/", UploadOnboardingDocumentView.as_view()),
-    path("admin/submitted/", AdminOnboardingListView.as_view()),
-    path("admin/<int:id>/", AdminOnboardingDetailView.as_view()),
-    path("admin/<int:id>/action/", AdminOnboardingActionView.as_view()),
-    path("admin/documents/<int:id>/verify/",VerifyOnboardingDocumentView.as_view()),
+    path("admin/submitted/", AdminOnboardingListView.as_view()),                        # LIST all submitted onboardings
+    path("admin/<int:id>/", AdminOnboardingDetailView.as_view()),                       # VIEW single onboarding (full details)
+    path("admin/documents/<int:id>/verify/",VerifyOnboardingDocumentView.as_view()),    # verify documents
+    path("admin/<int:id>/action/", AdminOnboardingActionView.as_view()),                # APPROVE / REJECT 
+     
     
-    path("onboarding/submit-status/", OnboardingSubmitStatusView.as_view(), name="onboarding-submit-status"),
+    path("submit-status/", OnboardingSubmitStatusView.as_view(), name="onboarding-submit-status"),
 
     # path("get/profile/", GetOnboardingProfileView.as_view()),
     # path("get/education/", GetOnboardingEducationView.as_view()),

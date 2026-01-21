@@ -24,6 +24,12 @@ class Onboarding(models.Model):
         default="DRAFT"
     )
 
+    rejected_section = models.CharField(
+    max_length=50,
+    null=True,
+    blank=True
+    )
+
     submitted_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
 
@@ -46,6 +52,11 @@ class Onboarding(models.Model):
 
 
 class OnboardingDocument(models.Model):
+
+    onboarding = models.ForeignKey(
+        Onboarding, on_delete=models.CASCADE, related_name="documents"
+    )
+    
     DOCUMENT_TYPE_CHOICES = (
         ("AADHAR", "Aadhar"),
         ("PAN", "PAN"),
