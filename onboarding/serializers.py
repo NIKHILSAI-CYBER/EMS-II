@@ -19,22 +19,44 @@ class SubmitOnboardingSerializer(serializers.Serializer):
     confirm = serializers.BooleanField()
 
 
-# class OnboardingDocumentSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OnboardingDocument
-#         fields = ("id", "document_type", "file", "is_verified", "uploaded_at")
-#         read_only_fields = ("is_verified", "uploaded_at")
-
 
 class OnboardingDocumentSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField()
+    file_name = serializers.SerializerMethodField()
 
     class Meta:
         model = OnboardingDocument
-        fields = ("id", "document_type", "file_url", "is_verified", "uploaded_at")
+        fields = (
+            "id",
+            "document_type",
+            "file_url",
+            "file_name",
+            "is_verified",
+            "uploaded_at",
+        )
 
     def get_file_url(self, obj):
-        return obj.file.url if obj.file else None
+        request = self.context.get("request")
+        if obj.file and hasattr(obj.file, "url"):
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return None
+
+    def get_file_name(self, obj):
+        if obj.file:
+            return obj.file.name.split("/")[-1]
+        return None
+
+# class OnboardingDocumentSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = OnboardingDocument
+#         fields = ("id", "document_type", "file_url", "is_verified", "uploaded_at")
+
+#     def get_file_url(self, obj):
+#         return obj.file.url if obj.file else None
     
 
 class OnboardingDocumentUploadSerializer(serializers.ModelSerializer):
@@ -70,6 +92,8 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
     experiences = serializers.SerializerMethodField()
     documents = serializers.SerializerMethodField()
 
+    is_documents_verified = serializers.SerializerMethodField()
+
     class Meta:
         model = Onboarding
         fields = (
@@ -80,6 +104,8 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
             "submitted_at",
             "admin_remarks",
 
+            "is_documents_verified",
+
             "profile",
             "identity",
             "bank",
@@ -87,7 +113,11 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
             "educations",
             "experiences",
             "documents",
+
+            "employee",
+            "reviewed_at",
         )
+
 
     def get_profile(self, obj):
         profile = getattr(obj, "profile", None)
@@ -109,45 +139,48 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
         qs = obj.experiences.all()
         return OnboardingExperienceSerializer(qs, many=True).data
 
+    # def get_documents(self, obj):
+    #     qs = obj.documents.all()
+    #     return OnboardingDocumentSerializer(qs, many=True).data
+
     def get_documents(self, obj):
         qs = obj.documents.all()
-        return OnboardingDocumentSerializer(qs, many=True).data
 
-# class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
-#     employee_email = serializers.CharField(source="employee.email", read_only=True)
-#     employee_name = serializers.CharField(source="employee.full_name", read_only=True)
-#     documents = serializers.SerializerMethodField()
+        return OnboardingDocumentSerializer(
+            qs,
+            many=True,
+            context=self.context
+        ).data
 
-#     class Meta:
-#         model = Onboarding
-#         fields = (
-#             "id",
-#             "employee_email",
-#             "employee_name",
-#             "status",
-#             "submitted_at",
-#             "admin_remarks",
-#             "documents",
-#         )
+    
+    def get_is_documents_verified(self, obj):
+        documents = obj.documents.all()
 
-#     def get_documents(self, obj):
-#         qs = obj.documents.all()
-#         return [
-#             {
-#                 "id": d.id,
-#                 "document_type": d.document_type,
-#                 "file": d.file.url if d.file else None,
-#                 "is_verified": d.is_verified,
-#                 "uploaded_at": d.uploaded_at,
-#             }
-#             for d in qs
-#         ]
+        if not documents.exists():
+            return False
+
+        return not documents.filter(is_verified=False).exists()
+    
+    # def get_is_documents_verified(self, obj):
+    #     docs = obj.documents.all()
+    #     if not docs.exists():
+    #         return False
+    #     return all(doc.is_verified for doc in docs)
+
+
+# class ApproveRejectOnboardingSerializer(serializers.Serializer):
+#     action = serializers.ChoiceField(choices=["APPROVE", "REJECT"])
+#     admin_remarks = serializers.CharField(required=False)
+#     rejected_section = serializers.ListField(
+#         child=serializers.CharField(),
+#         required=False
+    # )
 
 
 class ApproveRejectOnboardingSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["APPROVE", "REJECT"])
-    admin_remarks = serializers.CharField(required=False, allow_blank=True)
-
+    admin_remarks = serializers.CharField(required=False)
+    rejected_section = serializers.CharField(required=False)
 
 class VerifyDocumentSerializer(serializers.Serializer):
     is_verified = serializers.BooleanField()

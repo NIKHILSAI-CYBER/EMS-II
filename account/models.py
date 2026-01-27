@@ -110,7 +110,7 @@ class EmployeeProfile(models.Model):
     marital_status = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, blank=True)
 
-    personal_email = models.EmailField(blank=True)
+    personal_email = models.EmailField(blank=True,null=True)
     contact_number = models.CharField(max_length=15, blank=True)
     alternate_phone_number = models.CharField(max_length=15, blank=True)
 

@@ -198,6 +198,11 @@ class CreateEmployeeSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             email=validated_data["email"],
             full_name=validated_data["full_name"],
+            date_of_join=validated_data.get("date_of_join"),
+            company_name=validated_data.get("company_name", ""),
+            department=validated_data.get("department", ""),
+            designation=validated_data.get("designation", ""),
+            reporting_manager=validated_data.get("reporting_manager", ""),
             role="EMPLOYEE",
             password=password,
             is_active=True,

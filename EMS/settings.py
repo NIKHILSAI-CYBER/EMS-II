@@ -192,3 +192,8 @@ cloudinary.config(
     api_secret="Q8LbTa8RTkGvav_0CYa3cSS7tK4",
     secure=True,
 )
+
+
+# ✅ MEDIA SETTINGS (FOR DOCUMENT PREVIEW + DOWNLOAD)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

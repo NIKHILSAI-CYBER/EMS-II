@@ -7,6 +7,8 @@ urlpatterns = [
     path("submit/", SubmitOnboardingView.as_view()),
 
     path("documents/", OnboardingDocumentView.as_view()),
+
+    path("sections/", OnboardingSectionListView.as_view()),
     
     path("profiledata/", OnboardingProfileView.as_view()), 
     path("education/", OnboardingEducationView.as_view()),  
@@ -20,7 +22,7 @@ urlpatterns = [
     path("admin/<int:id>/action/", AdminOnboardingActionView.as_view()),
     path("admin/documents/<int:id>/verify/",VerifyOnboardingDocumentView.as_view()),
     
-    path("onboarding/submit-status/", OnboardingSubmitStatusView.as_view(), name="onboarding-submit-status"),
+    path("submit-status/", OnboardingSubmitStatusView.as_view(), name="onboarding-submit-status"),
 
     # path("get/profile/", GetOnboardingProfileView.as_view()),
     # path("get/education/", GetOnboardingEducationView.as_view()),

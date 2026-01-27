@@ -32,7 +32,8 @@ def get_editable_onboarding(user):
         return None, "Onboarding already approved"
 
     if onboarding.status == "REJECTED":
-        return None, "Onboarding rejected. Please wait for admin action."
+        # return None, "Onboarding rejected. Please wait for admin action."
+        return onboarding, None
 
     if onboarding.status != "DRAFT":
         return None, "Onboarding is not editable"
@@ -49,3 +50,8 @@ def get_onboarding(user):
     if not onboarding:
         return None, "Onboarding not found"
     return onboarding, None
+
+def ensure_section_editable(onboarding, section):
+    if onboarding.status != "REJECTED":
+        return True
+    return onboarding.rejected_section == section

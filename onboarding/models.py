@@ -1,8 +1,18 @@
 from django.db import models
 from django.conf import settings
 
+
 User = settings.AUTH_USER_MODEL
 
+
+ONBOARDING_SECTIONS = (
+    ("profile", "Personal Details"),
+    ("identity", "Identity"),
+    ("education", "Education"),
+    ("experience", "Experience"),
+    ("bank", "Bank Details"),
+    ("documents", "Documents"),
+)
 
 class Onboarding(models.Model):
     STATUS_CHOICES = (
@@ -24,6 +34,24 @@ class Onboarding(models.Model):
         default="DRAFT"
     )
 
+    admin_remarks = models.TextField(blank=True)
+
+#     ONBOARDING_SECTIONS = [
+#         ("PROFILE", "Personal Details"),
+#         ("IDENTITY", "Identity"),
+#         ("BANK", "Bank Details"),
+#         ("EDUCATION", "Education"),
+#         ("EXPERIENCE", "Experience"),
+#         ("DOCUMENTS", "Documents"),
+# ]
+
+    rejected_section = models.CharField(
+        max_length=50,
+        choices=ONBOARDING_SECTIONS,  # ✅ FIX
+        null=True,
+        blank=True
+)
+
     submitted_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
 
@@ -35,17 +63,13 @@ class Onboarding(models.Model):
         related_name="reviewed_onboardings"
     )
 
-    admin_remarks = models.TextField(blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.employee} - {self.status}"
     
 
 
-class OnboardingDocument(models.Model):
+class OnboardingDocument(models.Model):   
+
     DOCUMENT_TYPE_CHOICES = (
         ("AADHAR", "Aadhar"),
         ("PAN", "PAN"),
@@ -67,8 +91,10 @@ class OnboardingDocument(models.Model):
 
     file = models.FileField(upload_to="onboarding_documents/")
     is_verified = models.BooleanField(default=False)
-
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("onboarding", "document_type")
 
     def __str__(self):
         return f"{self.document_type} - {self.onboarding.employee}"

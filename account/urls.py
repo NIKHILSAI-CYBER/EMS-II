@@ -18,16 +18,14 @@ urlpatterns = [
     path("verify-otp/", VerifyOTPView.as_view()),
     path("reset-password/", ResetPasswordView.as_view()),
 
-
     #ADMIN
     path("admin/profile/",AdminProfileView.as_view()),
-    path("admin/dashboard/metrics/", AdminDashboardMetricsView.as_view()),
+    path("admin/dashboard/metrics/", AdminDashboardMetricsView.as_view()), 
     # path("profile/", AdminProfileView.as_view()),
     path("admin/employees/create/",AdminCreateEmployeeView.as_view()),
     path("admin/employees/",AdminEmployeeListView.as_view()),
     path("admin/employees/<int:employee_id>/",AdminEmployeeDetailView.as_view()),
     path("admin/own/profile/",AdminProfileDetailView.as_view()),
-
 
     #EMPLOYEE
     # path("dashboard/", DashboardView.as_view()),
