@@ -45,12 +45,15 @@ class Onboarding(models.Model):
 #         ("DOCUMENTS", "Documents"),
 # ]
 
-    rejected_section = models.CharField(
-        max_length=50,
-        choices=ONBOARDING_SECTIONS,  # ✅ FIX
-        null=True,
-        blank=True
-)
+    rejected_sections = models.JSONField(default=list, blank=True)
+
+#     rejected_section = models.CharField(
+#         max_length=50,
+
+#         choices=ONBOARDING_SECTIONS,  # ✅ FIX
+#         null=True,
+#         blank=True
+# )
 
     submitted_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)

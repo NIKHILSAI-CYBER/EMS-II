@@ -180,7 +180,12 @@ class AdminOnboardingDetailSerializer(serializers.ModelSerializer):
 class ApproveRejectOnboardingSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=["APPROVE", "REJECT"])
     admin_remarks = serializers.CharField(required=False)
-    rejected_section = serializers.CharField(required=False)
+    # rejected_sections = serializers.CharField(required=False)
+    rejected_sections = serializers.ListField(
+        child=serializers.CharField(),
+        required=False
+)
+
 
 class VerifyDocumentSerializer(serializers.Serializer):
     is_verified = serializers.BooleanField()

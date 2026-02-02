@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from account.permissions import IsPasswordChanged
 from account.models import User
-from onboarding.models import ONBOARDING_SECTIONS
+from onboarding.models import ONBOARDING_SECTIONS, OnboardingIdentity
 from .utils import get_onboarding, get_editable_onboarding, ensure_section_editable
 
 from .models import Onboarding, OnboardingDocument
@@ -30,49 +30,45 @@ from account.permissions import IsSuperAdmin
 from onboarding.utils import send_onboarding_status_email
 from .utils import get_onboarding
 
+
+
 # GET my onboarding (employee)
 class MyOnboardingView(APIView):
     permission_classes = [IsAuthenticated]
 
-    # def get(self, request):
-    #     onboarding = Onboarding.objects.filter(employee=request.user).first()
-    #     if not onboarding:
-    #         return Response({"error": "Onboarding not found"}, status=404)
-
-    #     return Response(OnboardingSerializer(onboarding).data)
-    
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=404)
 
         return Response({
             "status": onboarding.status,
             "admin_remarks": onboarding.admin_remarks,
-            "rejected_section": onboarding.rejected_section,  
+            "rejected_sections": onboarding.rejected_sections or [],
 
             "profile": (
-            OnboardingProfileSerializer(onboarding.profile).data
-            if hasattr(onboarding, "profile") else {}
-        ),
-        "identity": (
-            OnboardingIdentitySerializer(onboarding.identity).data
-            if hasattr(onboarding, "identity") else {}
-        ),
-        "bank": (
-            OnboardingBankSerializer(onboarding.bank).data
-            if hasattr(onboarding, "bank") else {}
-        ),
-        "educations": OnboardingEducationSerializer(
-            onboarding.educations.all(), many=True
-        ).data,
-        "experiences": OnboardingExperienceSerializer(
-            onboarding.experiences.all(), many=True
-        ).data,
-        "documents": OnboardingDocumentSerializer(
-            onboarding.documents.all(), many=True
-        ).data,
-    })
+                OnboardingProfileSerializer(onboarding.profile).data
+                if hasattr(onboarding, "profile") else {}
+            ),
+            "identity": (
+                OnboardingIdentitySerializer(onboarding.identity).data
+                if hasattr(onboarding, "identity") else {}
+            ),
+            "bank": (
+                OnboardingBankSerializer(onboarding.bank).data
+                if hasattr(onboarding, "bank") else {}
+            ),
+            "educations": OnboardingEducationSerializer(
+                onboarding.educations.all(), many=True
+            ).data,
+            "experiences": OnboardingExperienceSerializer(
+                onboarding.experiences.all(), many=True
+            ).data,
+            "documents": OnboardingDocumentSerializer(
+                onboarding.documents.all(), many=True, context={"request": request}
+            ).data,
+        })
+
 
 
 # SUBMIT onboarding (employee)
@@ -80,28 +76,23 @@ class SubmitOnboardingView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        onboarding = Onboarding.objects.filter(employee=request.user).first()
+        onboarding = get_onboarding(request.user)
         if not onboarding:
             return Response({"error": "Onboarding not found"}, status=404)
-        
-        if not hasattr(onboarding, "identity"):
+
+        from onboarding.models import OnboardingIdentity
+        if not OnboardingIdentity.objects.filter(onboarding=onboarding).exists():
             return Response({"error": "Identity details missing"}, status=400)
 
         if not onboarding.documents.exists():
             return Response({"error": "Documents not uploaded"}, status=400)
 
         if onboarding.status not in ["DRAFT", "REJECTED"]:
-            return Response(
-                {"error": "Onboarding already submitted"},
-            status=400
-         )
-
-        serializer = SubmitOnboardingSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+            return Response({"error": "Onboarding already submitted"}, status=400)
 
         onboarding.status = "SUBMITTED"
         onboarding.submitted_at = timezone.now()
-        onboarding.rejected_section = None
+        onboarding.rejected_sections = []
         onboarding.admin_remarks = ""
         onboarding.save()
 
@@ -111,28 +102,18 @@ class SubmitOnboardingView(APIView):
 class OnboardingDocumentView(APIView):
     permission_classes = [IsAuthenticated, IsPasswordChanged]
 
+    
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=400)
 
         documents = onboarding.documents.all()
         return Response(
-            OnboardingDocumentSerializer(documents, many=True,
-                                         context={"request":request}).data,
+            OnboardingDocumentSerializer(documents, many=True).data,
             status=200
-        )
+    )
 
-    # def post(self, request):
-    #     onboarding, error = get_editable_onboarding(request.user)
-    #     if error:
-    #         return Response({"error": error}, status=400)
-
-    #     serializer = OnboardingDocumentSerializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save(onboarding=onboarding)
-
-    #     return Response({"message": "Document uploaded"}, status=201)
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
@@ -166,35 +147,6 @@ class OnboardingDocumentView(APIView):
             status=201
         )
 
-# UPLOAD document (separate page)
-# class UploadOnboardingDocumentView(APIView):
-
-
-    # permission_classes = [IsAuthenticated]
-
-    # def post(self, request):
-    #     onboarding = Onboarding.objects.filter(employee=request.user).first()
-    #     if not onboarding:
-    #         return Response({"error": "Onboarding not found"}, status=404)
-
-    #     serializer = OnboardingDocumentSerializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-
-    #     serializer.save(onboarding=onboarding)
-    #     return Response({"message": "Document uploaded"})
-
-    # permission_classes = [IsAuthenticated, IsPasswordChanged]
-
-    # def post(self, request):
-    #     onboarding, error = get_editable_onboarding(request.user)
-    #     if error:
-    #         return Response({"error": error}, status=400)
-
-    #     serializer = OnboardingDocumentUploadSerializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save(onboarding=onboarding)
-
-    #     return Response({"message": "Document uploaded"})
 
 
 # LIST submitted onboardings (admin)
@@ -243,12 +195,15 @@ class AdminOnboardingActionView(APIView):
                 return Response(
                     {"error": "All documents must be verified before approval"},
                     status=400
-                )
+            )
+
             onboarding.status = "APPROVED"
-            onboarding.rejected_section = None
+            onboarding.rejected_sections = []   # ✅ NOT None
 
         else:  # REJECT
-            rejected_section = serializer.validated_data.get("rejected_section")
+            rejected_sections = [
+                s.upper() for s in serializer.validated_data.get("rejected_sections", [])
+            ]
 
             if not remarks:
                 return Response(
@@ -256,14 +211,14 @@ class AdminOnboardingActionView(APIView):
                     status=400
                 )
 
-            if not rejected_section:
+            if not rejected_sections:
                 return Response(
-                    {"error": "rejected_section is required when rejecting onboarding"},
+                    {"error": "rejected_sections is required when rejecting onboarding"},
                     status=400
                 )
 
             onboarding.status = "REJECTED"
-            onboarding.rejected_section = rejected_section
+            onboarding.rejected_sections = rejected_sections
 
         onboarding.save()
 
@@ -276,7 +231,7 @@ class AdminOnboardingActionView(APIView):
         return Response({
             "message": f"Onboarding {onboarding.status.lower()} successfully",
             "status": onboarding.status,
-            "rejected_section": onboarding.rejected_section
+            "rejected_sections": onboarding.rejected_sections
         })
     
 
@@ -296,30 +251,42 @@ class VerifyOnboardingDocumentView(APIView):
         document = OnboardingDocument.objects.filter(id=id).first()
         if not document:
             return Response({"error": "Document not found"}, status=404)
-        
-        if not ensure_section_editable(Onboarding, "DOCUMENTS"):
+
+        onboarding = document.onboarding
+
+        # ✅ Admin can verify ONLY when onboarding is SUBMITTED
+        if onboarding.status != "SUBMITTED":
             return Response(
-        {"error": "Documents are locked"},
-        status=403
-        )
+                {"error": "Documents can only be verified after submission"},
+                status=403
+            )
 
-        serializer = VerifyDocumentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        is_verified = request.data.get("is_verified")
+        if is_verified is None:
+            return Response(
+                {"error": "is_verified is required"},
+                status=400
+            )
 
-        document.is_verified = serializer.validated_data["is_verified"]
-        document.save()
+        document.is_verified = is_verified
+        document.save(update_fields=["is_verified"])
 
         return Response({
             "message": "Document verification updated",
             "document_id": document.id,
-            "is_verified": document.is_verified
+            "is_verified": document.is_verified,
+            "all_documents_verified": not onboarding.documents.filter(
+                is_verified=False
+            ).exists()
         })
+
+
 
 
 from account.permissions import IsPasswordChanged
 
 class OnboardingProfileView(APIView):
-    permission_classes = [IsAuthenticated, IsPasswordChanged]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
@@ -343,15 +310,15 @@ class OnboardingProfileView(APIView):
         return Response({"message": "Profile saved successfully"})
 
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=400)
 
-        profile = getattr(onboarding, "profile", None)
-        if not profile:
-            return Response({}, status=200)
-
-        return Response(OnboardingProfileSerializer(profile).data)
+        obj = getattr(onboarding, "profile", None)
+        return Response(
+            OnboardingProfileSerializer(obj).data if obj else {},
+            status=200
+    )
 
 
 
@@ -370,15 +337,14 @@ class OnboardingEducationView(APIView):
         return Response({"message": "Education added"})
 
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=400)
 
         queryset = onboarding.educations.all()
         return Response(
             OnboardingEducationSerializer(queryset, many=True).data,
-            status=200
-        )
+    )
     
 
 class OnboardingExperienceView(APIView):
@@ -395,54 +361,75 @@ class OnboardingExperienceView(APIView):
         return Response({"message": "Experience added"})
 
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=400)
 
         queryset = onboarding.experiences.all()
         return Response(
             OnboardingExperienceSerializer(queryset, many=True).data,
             status=200
-        )
+    )
 
     
-    
 class OnboardingIdentityView(APIView):
-    permission_classes = [IsAuthenticated, IsPasswordChanged]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         onboarding, error = get_editable_onboarding(request.user)
         if error:
             return Response({"error": error}, status=400)
-        
-        if not ensure_section_editable(onboarding, "IDENTITY"):
+
+        if not ensure_section_editable(onboarding, "identity"):
             return Response(
-        {"error": "Please correct Identity section only"},
-        status=403
-    )
+                {"error": "Please correct Identity section only"},
+                status=403
+            )
 
         obj = getattr(onboarding, "identity", None)
-        serializer = (                                            #PUT/PATCH is NOT required - You are doing upsert-style POSTs:
+        serializer = (
             OnboardingIdentitySerializer(obj, data=request.data, partial=True)
             if obj else OnboardingIdentitySerializer(data=request.data)
         )
 
+        print("USER:", request.user, request.user.role)
+        print("ONBOARDING STATUS:", onboarding.status)
+        print("IDENTITY STATUS:", getattr(onboarding, "identity_status", None))
+        print("PAYLOAD:", request.data)
+
         serializer.is_valid(raise_exception=True)
         serializer.save(onboarding=onboarding)
+
+        # ✅ ONLY remove this section from rejected_sections
+        # after saving identity
+        # after saving identity
+        if onboarding.status == "REJECTED":
+            rejected = onboarding.rejected_sections or []
+
+            if "IDENTITY" in rejected:
+                rejected.remove("IDENTITY")
+
+            onboarding.rejected_sections = rejected
+
+    # 🔥 if nothing left to fix → move back to DRAFT
+            if not rejected:
+                onboarding.status = "DRAFT"
+
+            onboarding.save(update_fields=["rejected_sections", "status"])
+
         return Response({"message": "Identity saved successfully"})
+
+
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=400)
 
-        identity = getattr(onboarding, "identity", None)
-        documents = onboarding.documents.all()
-
-        return Response({
-            "identity": OnboardingIdentitySerializer(identity).data if identity else {},
-            "documents": OnboardingDocumentSerializer(documents, many=True,
-                                                      context={"request":request}).data
-        }, status=200)
+        obj = getattr(onboarding, "identity", None)   # ✅ lowercase
+        return Response(
+            OnboardingIdentitySerializer(obj).data if obj else {},
+            status=200
+    )
 
     
 class OnboardingBankView(APIView):
@@ -464,15 +451,15 @@ class OnboardingBankView(APIView):
         return Response({"message": "Bank details saved"})
 
     def get(self, request):
-        onboarding, error = get_onboarding(request.user)
-        if error:
-            return Response({"error": error}, status=400)
+        onboarding = get_onboarding(request.user)
+        if not onboarding:
+            return Response({"error": "Onboarding not found"}, status=400)
 
         obj = getattr(onboarding, "bank", None)
         return Response(
             OnboardingBankSerializer(obj).data if obj else {},
             status=200
-        )
+    )
     
 
 class OnboardingSubmitStatusView(APIView):
@@ -500,41 +487,3 @@ class OnboardingSubmitStatusView(APIView):
         }, status=200)
     
 
-    
-# class GetOnboardingProfileView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         onboarding = get_onboarding(request.user)
-#         if not onboarding or not hasattr(onboarding, "profile"):
-#             return Response({})
-#         return Response(OnboardingProfileSerializer(onboarding.profile).data)
-
-# class GetOnboardingEducationView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         onboarding = get_onboarding(request.user)
-#         qs = onboarding.educations.all() if onboarding else []
-#         return Response(OnboardingEducationSerializer(qs, many=True).data)
-
-# class GetOnboardingExperienceView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         onboarding = get_onboarding(request.user)
-#         qs = onboarding.experiences.all() if onboarding else []
-#         return Response(OnboardingExperienceSerializer(qs, many=True).data)
-
-# class GetOnboardingIdentityView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         onboarding = get_onboarding(request.user)
-#         if not onboarding or not hasattr(onboarding, "identity"):
-#             return Response({})
-#         return Response(OnboardingIdentitySerializer(onboarding.identity).data)
-
-# class GetOnboardingBankView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         onboarding = get_onboarding(request.user)
-#         if not onboarding or not hasattr(onboarding, "bank"):
-#             return Response({})
-#         return Response(OnboardingBankSerializer(onboarding.bank).data)
