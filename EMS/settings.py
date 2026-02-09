@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+ 
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env early
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -91,14 +95,6 @@ EMAIL_HOST_USER = "swethadomatoti@gmail.com"
 EMAIL_HOST_PASSWORD = "vzqvbbtmzvexxgdz"
 
 DEFAULT_FROM_EMAIL = "EMS <swethadomatoti@gmail.com>"
-
-
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
 from datetime import timedelta
 
