@@ -31,45 +31,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         (False, "Inactive"),
     )
 
-    employee_id = models.CharField(
-        max_length=20,
-        unique=True,
-        editable=False,
-        db_index=True
-    )
-
-    email = models.EmailField(
-        unique=True,
-        db_index=True
-    )
-
+    employee_id = models.CharField(max_length=20,unique=True,editable=False,db_index=True)
+    email = models.EmailField(unique=True,db_index=True)
     full_name = models.CharField(max_length=150)
     date_of_join = models.DateField(null=True, blank=True)
     company_name = models.CharField(max_length=150, blank=True)
-
-    department = models.CharField(
-        max_length=100,
-        choices=DEPARTMENT_CHOICES,
-        blank=True
-    )
-
+    department = models.CharField(max_length=100,choices=DEPARTMENT_CHOICES,blank=True)
     designation = models.CharField(max_length=100, blank=True)
     reporting_manager = models.CharField(max_length=150, blank=True)
-
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        db_index=True
-    )
-
-    is_active = models.BooleanField(
-        default=True,
-        choices=STATUS_CHOICES
-    )
-
+    role = models.CharField(max_length=20,choices=ROLE_CHOICES,db_index=True)
+    is_active = models.BooleanField(default=True,choices=STATUS_CHOICES)
     is_staff = models.BooleanField(default=False)
     is_first_login = models.BooleanField(default=True)
-
     date_joined = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = "email"
