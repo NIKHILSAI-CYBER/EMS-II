@@ -87,13 +87,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
-# Use your real Gmail address here
 EMAIL_HOST_USER = "swethadomatoti@gmail.com"
-
-# Use the 16-character app password from step 1
 EMAIL_HOST_PASSWORD = "vzqvbbtmzvexxgdz"
-
 DEFAULT_FROM_EMAIL = "EMS <swethadomatoti@gmail.com>"
 
 from datetime import timedelta
